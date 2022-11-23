@@ -3,7 +3,7 @@ const { open } = require("sqlite");
 const sqlite3 = require("sqlite3");
 const path = require("path");
 
-const databasePath = path.join(__dirname, "covid19India.db.db");
+const databasePath = path.join(__dirname, "covid19India.db");
 
 const app = express();
 
@@ -28,9 +28,9 @@ const initializeDbAndServer = async () => {
 
 initializeDbAndServer();
 
-convertStateDbIntoResponseDb = (dbobject) => {
+convertStateDbIntoResponseDb = (dbObject) => {
   return {
-    stateId: dbobject.state_id,
+    stateId: dbObject.state_id,
     stateName: dbObject.state_name,
     population: dbObject.population,
   };
@@ -50,9 +50,29 @@ convertDistrictDbIntoResponseDb = (dbObject) => {
 
 //API1//
 app.get("/states/", async (request, response) => {
-  const stateQuery = `SELECT * FROM state`;
+  const stateQuery = `SELECT * FROM state;`;
   const statesList = await database.all(stateQuery);
   response.send(convertStateDbIntoResponseDb(statesList));
+});
+
+//API2//
+app.get("/states/:stateId/", async (request, response) => {
+  const { stateId } = request.params;
+  const stateIdQuery = `SELECT * FROM state WHERE state_id=${stateId}`;
+  const state = await database.get(stateIdQuery);
+  response.send(convertStateDbIntoResponseDb(state));
+});
+
+//API3//
+app.post("/districts/", async (request, response) => {
+  const { districtName, stateId, cases, cured, active, deaths } = request.body;
+  const postDistrictQuery = `
+  INSERT INTO
+    district ( director_name, state_id, cases, cured, active, deaths)
+  VALUES
+    (${districtName}, '${stateId}', '${cases}', '${cured}', '${active}', '${deaths}');`;
+  await database.run(postDistrictQuery);
+  response.send("District Successfully Added");
 });
 
 module.exports = app;
